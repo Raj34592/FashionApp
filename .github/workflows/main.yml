@@ -1,47 +1,30 @@
-name: Build FashionApp APK
+name: Build Offline AI App
 
 on:
-  push:
-    branches: [ "main" ]
-  workflow_dispatch:
+  workflow_dispatch: # Allows manual trigger from Actions tab
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repository
+    - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Set up JDK 17
+    - name: Set up Java 17
       uses: actions/setup-java@v4
       with:
-        java-version: '17'
         distribution: 'temurin'
+        java-version: '17'
 
-    - name: Prepare Android Project Structure
+    - name: Create Clean Android Project
       run: |
-        mkdir -p app/src/main/java/com/example/fashionapp
+        mkdir -p app/src/main/java/com/offline/app
         mkdir -p app/src/main/res/layout
-        
-        mv MainActivity.java app/src/main/java/com/example/fashionapp/ 2>/dev/null || true
-        mv activity_main.xml app/src/main/res/layout/ 2>/dev/null || true
+        mkdir -p app/src/main/res/values
 
-        cat <<EOF > app/src/main/AndroidManifest.xml
-        <?xml version="1.0" encoding="utf-8"?>
-        <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-            <application android:allowBackup="true" android:label="FashionApp" android:theme="@style/Theme.AppCompat.Light.NoActionBar">
-                <activity android:name=".MainActivity" android:exported="true">
-                    <intent-filter>
-                        <action android:name="android.intent.action.MAIN" />
-                        <category android:name="android.intent.category.LAUNCHER" />
-                    </intent-filter>
-                </activity>
-            </application>
-        </manifest>
-        EOF
-
-        cat <<EOF > settings.gradle
+        # settings.gradle
+        cat << 'EOF' > settings.gradle
         pluginManagement {
             repositories {
                 google()
@@ -56,34 +39,73 @@ jobs:
                 mavenCentral()
             }
         }
-        rootProject.name = "FashionApp"
+        rootProject.name = "OfflineAIApp"
         include ':app'
         EOF
 
-        cat <<EOF > build.gradle
+        # build.gradle (Project Level)
+        cat << 'EOF' > build.gradle
         plugins {
-            id 'com.android.application' version '8.2.0' apply false
+            id 'com.android.application' version '8.1.0' apply false
         }
         EOF
 
-        cat <<EOF > app/build.gradle
+        # app/build.gradle (App Level)
+        cat << 'EOF' > app/build.gradle
         plugins {
             id 'com.android.application'
         }
         android {
-            namespace 'com.example.fashionapp'
+            namespace 'com.offline.app'
             compileSdk 34
             defaultConfig {
-                applicationId "com.example.fashionapp"
+                applicationId "com.offline.app"
                 minSdk 24
                 targetSdk 34
                 versionCode 1
                 versionName "1.0"
             }
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_17
+                targetCompatibility JavaVersion.VERSION_17
+            }
         }
         dependencies {
             implementation 'androidx.appcompat:appcompat:1.6.1'
             implementation 'com.google.android.material:material:1.11.0'
+        }
+        EOF
+
+        # AndroidManifest.xml
+        cat << 'EOF' > app/src/main/AndroidManifest.xml
+        <?xml version="1.0" encoding="utf-8"?>
+        <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+            <application
+                android:allowBackup="true"
+                android:label="Offline AI"
+                android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+                <activity
+                    android:name=".MainActivity"
+                    android:exported="true">
+                    <intent-filter>
+                        <action android:name="android.intent.action.MAIN" />
+                        <category android:name="android.intent.category.LAUNCHER" />
+                    </intent-filter>
+                </activity>
+            </application>
+        </manifest>
+        EOF
+
+        # MainActivity.java (Basic setup)
+        cat << 'EOF' > app/src/main/java/com/offline/app/MainActivity.java
+        package com.offline.app;
+        import android.os.Bundle;
+        import androidx.appcompat.app.AppCompatActivity;
+        public class MainActivity extends AppCompatActivity {
+            @Override
+            protected void onCreate(Bundle savedInstanceState) {
+                super.onCreate(savedInstanceState);
+            }
         }
         EOF
 
@@ -93,10 +115,10 @@ jobs:
         gradle-version: '8.4'
 
     - name: Build APK File
-      run: gradle assembleDebug
+      run: gradle :app:assembleDebug --no-daemon
 
-    - name: Upload APK for Download
+    - name: Upload Complete APK
       uses: actions/upload-artifact@v4
       with:
-        name: FashionApp-APK
+        name: Offline-AI-App-APK
         path: app/build/outputs/apk/debug/app-debug.apk
