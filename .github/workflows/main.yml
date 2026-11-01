@@ -74,4 +74,5 @@ jobs:
     - name: Upload Complete APK
       uses: actions/upload-artifact@v4
       with:
-        name: Offline-AI-App
+        name: Offline-AI-App-APK
+        path: "**/*.apk"
